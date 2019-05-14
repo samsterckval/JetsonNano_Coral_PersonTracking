@@ -1,4 +1,8 @@
-# import the necessary packages
+# MIT License
+# Copyright (c) 2019 Sam Sterckval
+# See license
+# Class for Subject of interest, that can track centroid with the aid of a siamese classifier
+
 import numpy as np
 import cv2
 from scipy.spatial import distance as dist
@@ -191,7 +195,13 @@ class Ash():
             return False
 
     def Update(self, candis, t, frame):
-
+        '''
+        Update the object
+        :param candis: list of candidates
+        :param t: ms since last frame
+        :param frame: frame
+        :return: True if found, False if not
+        '''
         if self.absent>= 10:
             self.ashed = 0
             self.absent = 0
