@@ -18,7 +18,7 @@ class Ash():
     reid_refresh : updates between the refresh of the re-ID, defaults to 10
     mbed_refresh : updates between the refresh of the reference embedding, defaults to 50
     '''
-    def __init__(self, color=None, name=None, model=None, reid_refresh=2, mbed_refresh=50):
+    def __init__(self, color=None, name=None, model=None, reid_refresh=5, mbed_refresh=50):
         if name:
             self.name = name
         else:
@@ -165,6 +165,9 @@ class Ash():
         self.ashed = 1
 
     def Define_From_Reid(self, boxes, frame, threshold=0.9):
+        if len(boxes) == 0:
+            return False
+
         score_list = []
         for box in boxes:
             score = self.Get_Reid_score(self.Get_Siamese_Tensor(frame, box))
@@ -173,16 +176,100 @@ class Ash():
         score_list = np.asarray(score_list)
         # now we should either have a list with the scores
         a = score_list.argmax()  # take out highest score
-        print(score_list[a])
         if score_list[a] > threshold:
             self.p1 = boxes[a][:2]
             self.p2 = boxes[a][2:]
+            self.Calc_Size()
+            self.Calc_Area()
+            self.Calc_Centroid()
+            self.ashed = 1
+            self.absent = 0
+            self.reid_counter = 0
+            self.reid_score = score_list[a]
             return True
         else:
-            print('No box with high re-ID score was found, assuming SOI was absent.')
             return False
 
     def Update(self, candis, t, frame):
+
+        if self.absent>= 10:
+            self.ashed = 0
+            self.absent = 0
+            print('SOI deregistered')
+            return False
+
+        if not self.ashed:
+            if self.reid:
+                found = self.Define_From_Reid(candis, frame, threshold=0.97)
+                if found:
+                    print('SOI has re-entered')
+                    return True
+                else:
+                    return False
+            else:
+                return False
+
+        self.mbed_counter += 1  # Update the counters
+        self.reid_counter += 1  # Because the siamese re-ID network should prob not run every update
+
+        if len(candis) == 0:        # no candidates, no SOI!
+            print('SOI not found, no bboxs')
+            self.absent += 1
+            return False
+
+        next_box, distance = self.Get_Closest_Box(self.loc, candis) # Get the closest bbox, with its distance
+
+        if distance > 150.0 and self.reid:                                        # Big jump, check all the others
+            print('That was a big jump, lets check the other boxes')
+            found = self.Define_From_Reid(candis, frame, threshold=0.94)
+            if found:
+                print('Fout a better box [' + str(self.reid_score) + '], targetting that one')
+                return True
+            else:
+                print('No box with high re-ID score was found, assuming SOI was absent.')
+                self.absent += 1
+                return False
+        else:           # Small jump, assume it's right
+            next_box[:2] = self.ma_alpha * next_box[:2] + (1 - self.ma_alpha) * self.p1 # A bit of smoothing
+            next_box[2:] = self.ma_alpha * next_box[2:] + (1 - self.ma_alpha) * self.p2
+
+            self.p1 = next_box[:2]  # Set the new box
+            self.p2 = next_box[2:]
+
+            if self.reid_counter >= self.reid_refresh and self.reid:
+                self.reid_counter = 0  # reset counter
+                self.reid_score = self.Get_Reid_score(self.Get_Siamese_Tensor(frame))  # get the score
+
+                if self.reid_score < 0.93:  # might indicate a person switch
+                    print('Re-ID score was low : ' + str(self.reid_score) + ', checking ' + str(
+                        len(candis)) + ' boxes for a higher score')
+                    found = self.Define_From_Reid(candis, frame, threshold=0.95)
+                    if found:
+                        print('Better box found [' + str(self.reid_score) + '], new target')
+                    else:
+                        print('Nothing found, keeping current, but absenting SOI')
+                        self.absent += 1
+                        return False
+
+            self.Calc_Size()
+            self.Calc_Area()
+            self.Calc_Centroid()
+            self.absent = 0         # certainly not absent now
+
+            if self.mbed_counter >= self.mbed_refresh and self.reid:
+                if self.reid_counter > 0:   # also update the re-ID score if it's old news
+                    self.reid_counter = 0   # reset that counter
+                    self.reid_score = self.Get_Reid_score(self.Get_Siamese_Tensor(frame))   # Calculate score
+                if self.reid_score > 0.95:  # don't update if the score is not too certain...
+                    self.mbed_counter = 0
+                    self.Set_Ref_Mbed(frame)
+                else:
+                    print('Re-ID score was too low, no new reference embedding set.')
+
+        return True
+
+
+    def UpdateV0(self, candis, t, frame):
         '''
         Update the object
         :param candis: list of candidates
@@ -198,8 +285,10 @@ class Ash():
             found = self.Define_From_Reid(candis, frame, threshold=0.97)
             if found :
                 self.ashed = 1
+            else:
+                return False
 
-        if self.ashed == 0: # No SOI defined yet, so nu update required
+        if self.ashed == 0: # No SOI defined yet, so no update required
             return False
 
         self.mbed_counter += 1      # update the counters
