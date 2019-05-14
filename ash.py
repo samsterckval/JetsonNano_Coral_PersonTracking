@@ -19,7 +19,7 @@ class Ash():
     p2 : lower right piont of box
     area : area of box
     model : 1 leg of the siamese model used to re-ID
-    reid_refresh : updates between the refresh of the re-ID, defaults to 10
+    reid_refresh : updates between the refresh of the re-ID, defaults to 5
     mbed_refresh : updates between the refresh of the reference embedding, defaults to 50
     '''
     def __init__(self, color=None, name=None, model=None, reid_refresh=5, mbed_refresh=50):
@@ -233,7 +233,7 @@ class Ash():
             print('That was a big jump, lets check the other boxes')
             found = self.Define_From_Reid(candis, frame, threshold=0.94)
             if found:
-                print('Fout a better box [' + str(self.reid_score) + '], targetting that one')
+                print('Found a better box [' + str(self.reid_score) + '], targetting that one')
                 return True
             else:
                 print('No box with high re-ID score was found, assuming SOI was absent.')
@@ -256,30 +256,33 @@ class Ash():
                     found = self.Define_From_Reid(candis, frame, threshold=0.95)
                     if found:
                         print('Better box found [' + str(self.reid_score) + '], new target')
+                        self.absent = 0
                     else:
                         print('Nothing found, keeping current, but absenting SOI')
                         self.absent += 1
                         return False
+                else:
+                    self.absent = 0
 
             self.Calc_Size()
             self.Calc_Area()
             self.Calc_Centroid()
-            self.absent = 0         # certainly not absent now
 
             if self.mbed_counter >= self.mbed_refresh and self.reid:
                 if self.reid_counter > 0:   # also update the re-ID score if it's old news
                     self.reid_counter = 0   # reset that counter
                     self.reid_score = self.Get_Reid_score(self.Get_Siamese_Tensor(frame))   # Calculate score
                 if self.reid_score > 0.95:  # don't update if the score is not too certain...
-                    self.mbed_counter = 0
-                    self.Set_Ref_Mbed(frame)
+                    self.mbed_counter = 0   # reset counter
+                    self.Set_Ref_Mbed(frame)    # Set new reference embedding
                 else:
                     print('Re-ID score was too low, no new reference embedding set.')
+                    self.mbed_counter = int(self.mbed_refresh/2)
 
         return True
 
 
-    def UpdateV0(self, candis, t, frame):
+    def UpdateV0(self, candis, t, frame):   # Old version of the update, this was mainly ducktapy shit
         '''
         Update the object
         :param candis: list of candidates
