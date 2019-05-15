@@ -76,7 +76,7 @@ def getter():
                                               display_height=height,
                                               framerate=FRAME_RATE,
                                               flip_method=2), cv2.CAP_GSTREAMER)
-
+    #delay = 1 / FRAME_RATE
     if cap.isOpened():
         while not quit:
             _,latestFrame = cap.read()
@@ -84,6 +84,7 @@ def getter():
                 print('camera closed')
                 cap.release()
                 break
+            #time.sleep(delay)
 
         cap.release()
 
