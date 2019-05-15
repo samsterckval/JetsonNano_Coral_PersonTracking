@@ -210,7 +210,7 @@ class Ash():
 
         if not self.ashed:
             if self.reid:
-                found = self.Define_From_Reid(candis, frame, threshold=0.97)
+                found = self.Define_From_Reid(candis, frame, threshold=0.96)
                 if found:
                     print('SOI has re-entered')
                     return True
