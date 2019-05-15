@@ -1,9 +1,9 @@
 # JetsonNano_Coral_PersonTracking
 
 ## Requirements
-NVIDIA Jetson Nano with JetPack and Coral python API installed
-Google Coral USB Accelerator
-PiCameraV2 ( this could actually be any camera on the CSI interface )
+- NVIDIA Jetson Nano with JetPack and Coral python API installed
+- Google Coral USB Accelerator
+- PiCameraV2 ( this could actually be any camera on the CSI interface )
 
 ## How does it work?
 Images collected from the camera are processed by the Coral to extract all objects' bounding boxes, using MobileNetV2_SSD. Person's bounding boxes are saved, the rest gets binned.
