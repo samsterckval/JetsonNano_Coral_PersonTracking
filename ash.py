@@ -56,7 +56,7 @@ class Ash():
         self.speed = np.array([0,0])
         self.absent = 0
         self.ashed = 0
-        self.ma_alpha = 0.2
+        self.ma_alpha = 0.3
 
     def Set_Ref_Mbed(self, frame):
         '''
@@ -202,7 +202,7 @@ class Ash():
         :param frame: frame
         :return: True if found, False if not
         '''
-        if self.absent>= 10:
+        if self.absent>= 15:
             self.ashed = 0
             self.absent = 0
             print('SOI deregistered')

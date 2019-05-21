@@ -54,7 +54,9 @@ def shower():
 
     delay = 1/FRAME_RATE
     while not quit:
+        s = time.time()
         output_frame = np.copy(latestFrame)
+        output_frame = latestFrame
         if a.ashed == 1:
             cv2.putText(output_frame, a.name, a.Get_centroid_tuple(), cv2.FONT_HERSHEY_SIMPLEX, 0.5, a.color, 1)
             cv2.putText(output_frame, str(a.reid_score), a.Get_p1_tuple(), cv2.FONT_HERSHEY_SIMPLEX, 0.5, a.color, 1)
@@ -62,7 +64,10 @@ def shower():
 
         cv2.putText(output_frame, "fps:{:0>3d}".format(pfps), (1, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255, 255, 255), 1)
         cv2.imshow(WINDOW_TITLE, output_frame)
-        time.sleep(delay)
+        e = time.time()
+        diff = e-s
+        if diff < delay:
+            time.sleep(delay-diff)
 
     cv2.destroyAllWindows()
 
@@ -76,16 +81,19 @@ def getter():
                                               display_height=height,
                                               framerate=FRAME_RATE,
                                               flip_method=2), cv2.CAP_GSTREAMER)
-    #delay = 1 / FRAME_RATE
+    delay = 1 / FRAME_RATE
     if cap.isOpened():
         while not quit:
+            s = time.time()
             _,latestFrame = cap.read()
             if(time.time() - lastrun > 20):    # just so that the camera gets released on crash
                 print('camera closed')
                 cap.release()
                 break
-            #time.sleep(delay)
-
+            e = time.time()
+            diff = e-s
+            if diff < delay:
+                time.sleep(delay-diff)
         cap.release()
 
 def process():
@@ -148,7 +156,7 @@ if __name__ == '__main__':
     turbonet = load_model('model/TurboNet_Siamese-retrain.hdf5')
     turbonet.summary()
 
-    a = Ash(model=turbonet, name='Turbo')
+    a = Ash(model=turbonet, name=' ')
 
     pfps = 0
 
