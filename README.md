@@ -19,4 +19,4 @@ If a jump of the centroid is too big, or the similarity score is too low, all ot
 - when spacebar is tapped, the middle-most person in the FOV is selected as SOI
 
 ## Schematic
-![Schema](https://bitbucket.org/raccoons-group/person-tracking-edge/raw/e3fbdf78c225877cf3e078c46dd1bc44aad9c743/schema.png)
+![Schema](schema.png)
